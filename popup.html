@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Solpump Crash Analyzer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      min-height: 500px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: rgba(10, 14, 39, 0.15);
+      color: #fff;
+      padding: 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .header {
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      text-align: center;
+      border-bottom: 2px solid rgba(68, 255, 68, 0.3);
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .container {
+      padding: 15px;
+    }
+
+    .prediction-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .prediction-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .confidence-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .confidence-HIGH {
+      background: #ff4444;
+      color: white;
+    }
+
+    .confidence-MEDIUM {
+      background: #ffaa00;
+      color: white;
+    }
+
+    .confidence-LOW {
+      background: #44ff44;
+      color: #222;
+    }
+
+    .confidence-NONE {
+      background: #666;
+      color: white;
+    }
+
+    .recommendation {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .recommendation.BET {
+      background: rgba(68, 255, 68, 0.2);
+      border: 2px solid #44ff44;
+    }
+
+    .recommendation.WAIT {
+      background: rgba(255, 68, 68, 0.2);
+      border: 2px solid #ff4444;
+    }
+
+    .reasons {
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .reasons li {
+      margin: 5px 0;
+      padding-left: 15px;
+      list-style: none;
+      position: relative;
+    }
+
+    .reasons li:before {
+      content: "→";
+      position: absolute;
+      left: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .stat-box {
+      background: rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .stat-value.good {
+      color: #44ff44;
+    }
+
+    .stat-value.bad {
+      color: #ff4444;
+    }
+
+    .patterns {
+      margin-top: 15px;
+    }
+
+    .pattern-item {
+      background: rgba(0,0,0,0.2);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 5px 0;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tabs {
+      display: flex;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 15px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: rgba(255,255,255,0.2);
+      font-weight: bold;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .history-item {
+      background: rgba(0,0,0,0.2);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 5px 0;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .multiplier {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .multiplier.high {
+      color: #44ff44;
+    }
+
+    .multiplier.medium {
+      color: #ffaa00;
+    }
+
+    .multiplier.low {
+      color: #ff4444;
+    }
+
+    .button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+
+    .button:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      opacity: 0.6;
+    }
+
+    .error {
+      background: rgba(255,68,68,0.2);
+      border: 1px solid #ff4444;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+
+    .scroll-container {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scroll-container::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+      border-radius: 3px;
+    }
+
+    .scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎰 Solpump Crash Analyzer</h1>
+    <div class="subtitle">AI-Powered Pattern Detection</div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="prediction">Prediction</div>
+      <div class="tab" data-tab="demo">Demo Mode</div>
+      <div class="tab" data-tab="autoplay">Auto-Play</div>
+      <div class="tab" data-tab="claude">Claude AI</div>
+      <div class="tab" data-tab="stats">Statistics</div>
+      <div class="tab" data-tab="history">History</div>
+    </div>
+
+    <div id="loading" class="loading">
+      Loading data...
+    </div>
+
+    <div id="error" class="error" style="display:none;"></div>
+
+    <!-- Prediction Tab -->
+    <div id="tab-prediction" class="tab-content active">      <div class="prediction-card">
+        <div class="prediction-title">
+          <span>💡 Current Recommendation</span>
+          <span id="confidence-badge" class="confidence-badge">NONE</span>
+        </div>
+        
+        <div id="recommendation" class="recommendation WAIT">
+          LOADING...
+        </div>
+
+        <div id="target" style="text-align: center; font-size: 14px; margin-top: 10px;"></div>
+
+        <div class="reasons">
+          <ul id="reasons-list"></ul>
+        </div>
+      </div>
+
+      <div class="prediction-card" id="patterns-card" style="display:none;">
+        <div class="prediction-title">📊 Detected Patterns</div>
+        <div id="patterns-list"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Prob. 2x+</div>
+          <div id="prob-2x" class="stat-value">-%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Prob. 1.5x+</div>
+          <div id="prob-1-5x" class="stat-value">-%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo Mode Tab -->
+    <div id="tab-demo" class="tab-content">
+      <div class="prediction-card" style="background: rgba(255, 215, 0, 0.1); border-color: rgba(255, 215, 0, 0.3);">
+        <div class="prediction-title">🎮 Demo / Watch Mode</div>
+        <p style="font-size: 12px; margin: 10px 0;">
+          Test everything <strong>WITHOUT USING REAL MONEY</strong>. All features work, but bets are simulated with virtual SOL.
+        </p>
+        
+        <div style="margin: 15px 0;">
+          <label style="display: block; font-size: 12px; margin-bottom: 5px;">Virtual Bet Amount (SOL)</label>
+          <input type="number" id="demo-bet-amount" value="0.01" step="0.01" min="0.001" 
+                 style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 14px;">
+        </div>
+
+        <div style="margin: 15px 0;">
+          <label style="display: block; font-size: 12px; margin-bottom: 5px;">Target Multiplier</label>
+          <input type="number" id="demo-target" value="2.0" step="0.1" min="1.1" 
+                 style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 14px;">
+        </div>
+
+        <div style="margin: 15px 0;">
+          <label style="display: flex; align-items: center; font-size: 13px; cursor: pointer;">
+            <input type="checkbox" id="demo-auto-bet" style="margin-right: 8px;">
+            <span>Auto-simulate bets (follows AI recommendations)</span>
+          </label>
+        </div>
+
+        <button class="button" id="generate-demo-data" style="background: rgba(68,255,68,0.3); border: 2px solid #44ff44; color: #fff; margin-bottom: 10px;">
+          [TEST] Generate 50 Test Games
+        </button>
+
+        <button class="button" id="start-demo" style="background: rgba(255,215,0,0.3); border: 2px solid #ffd700; color: #fff;">
+          [START] Demo Mode
+        </button>
+        <button class="button" id="stop-demo" style="background: rgba(255,68,68,0.3); border: 2px solid #ff4444; display: none;">
+          [STOP] Demo Mode
+        </button>
+      </div>
+
+      <div class="prediction-card" id="demo-stats-card" style="display: none;">
+        <div class="prediction-title">💰 Virtual Performance</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Virtual Balance</div>
+            <div id="demo-balance" class="stat-value">1.0000</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Profit/Loss</div>
+            <div id="demo-profit" class="stat-value">0.0000</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Games Watched</div>
+            <div id="demo-games" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Win Rate</div>
+            <div id="demo-winrate" class="stat-value">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prediction-card" id="demo-analysis-card" style="display: none;">
+        <div class="prediction-title">📊 AI Performance</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">AI Predictions</div>
+            <div id="demo-ai-predictions" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">AI Accuracy</div>
+            <div id="demo-ai-accuracy" class="stat-value">0%</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Virtual Bets</div>
+            <div id="demo-bets" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">ROI</div>
+            <div id="demo-roi" class="stat-value">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prediction-card" id="demo-controls-card" style="display: none;">
+        <button class="button" id="demo-report" style="font-size: 13px;">
+          📋 Generate Report
+        </button>
+        <button class="button" id="demo-export" style="font-size: 13px;">
+          💾 Export Data (JSON)
+        </button>
+        <button class="button" id="demo-reset" style="font-size: 13px; background: rgba(255,68,68,0.2);">
+          🔄 Reset Session
+        </button>
+      </div>
+
+      <div class="prediction-card" style="background: rgba(68,255,68,0.1); border-color: rgba(68,255,68,0.3);">
+        <div style="font-size: 12px;">
+          <strong>✅ What Demo Mode Does:</strong>
+          <ul style="margin: 10px 0; padding-left: 20px; font-size: 11px;">
+            <li><strong>Watches</strong> all crashes in real-time</li>
+            <li><strong>Simulates</strong> bets with virtual SOL</li>
+            <li><strong>Tracks</strong> what you would have won/lost</li>
+            <li><strong>Tests</strong> AI predictions without risk</li>
+            <li><strong>Shows</strong> exactly how your strategy performs</li>
+            <li><strong>Uses</strong> ALL features (AI, auto-play, etc.)</li>
+          </ul>
+          <strong>Perfect for testing before risking real money!</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto-Play Tab -->
+    <div id="tab-autoplay" class="tab-content">      <div class="prediction-card">
+        <div class="prediction-title">🤖 Automated Player</div>
+        
+        <div style="margin: 15px 0;">
+          <label style="display: block; font-size: 12px; margin-bottom: 5px;">Bet Amount (SOL)</label>
+          <input type="number" id="bet-amount" value="0.01" step="0.01" min="0.001" 
+                 style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 14px;">
+        </div>
+
+        <div style="margin: 15px 0;">
+          <label style="display: block; font-size: 12px; margin-bottom: 5px;">Target Multiplier</label>
+          <input type="number" id="target-mult" value="2.0" step="0.1" min="1.1" 
+                 style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 14px;">
+        </div>
+
+        <div class="stats-grid" style="margin: 15px 0;">
+          <div style="grid-column: span 2;">
+            <label style="display: block; font-size: 12px; margin-bottom: 5px;">Stop Loss (SOL)</label>
+            <input type="number" id="stop-loss" value="0.1" step="0.01" min="0.01" 
+                   style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 14px;">
+          </div>
+          <div style="grid-column: span 2;">
+            <label style="display: block; font-size: 12px; margin-bottom: 5px;">Take Profit (SOL)</label>
+            <input type="number" id="take-profit" value="0.5" step="0.01" min="0.01" 
+                   style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 14px;">
+          </div>
+        </div>
+
+        <button class="button" id="start-autoplay" style="background: rgba(68, 255, 68, 0.3); border: 2px solid #44ff44;">
+          ▶️ Start Auto-Play
+        </button>
+        <button class="button" id="stop-autoplay" style="background: rgba(255, 68, 68, 0.3); border: 2px solid #ff4444; display: none;">
+          ⏹️ Stop Auto-Play
+        </button>
+      </div>
+
+      <div class="prediction-card" id="autoplay-stats-card" style="display: none;">
+        <div class="prediction-title">📊 Session Stats</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Games Played</div>
+            <div id="ap-games" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Win Rate</div>
+            <div id="ap-winrate" class="stat-value">0%</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Total Bet</div>
+            <div id="ap-bet" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Profit/Loss</div>
+            <div id="ap-profit" class="stat-value">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prediction-card" style="background: rgba(255, 68, 68, 0.1); border-color: rgba(255, 68, 68, 0.3);">
+        <div style="font-size: 12px; opacity: 0.9;">
+          ⚠️ <strong>Warning:</strong> Auto-playing involves real money. The bot will:
+          <ul style="margin: 10px 0; padding-left: 20px; font-size: 11px;">
+            <li>Automatically place bets every round</li>
+            <li>Cash out at your target multiplier</li>
+            <li>Stop when hitting profit/loss limits</li>
+            <li>Use REAL SOL from your wallet</li>
+          </ul>
+          Only use amounts you can afford to lose!
+        </div>
+      </div>
+    </div>
+
+    <!-- Claude AI Tab -->
+    <div id="tab-claude" class="tab-content">
+      <div class="prediction-card">
+        <div class="prediction-title">🤖 Claude API Setup</div>
+        
+        <div style="margin: 15px 0;">
+          <label style="display: block; font-size: 12px; margin-bottom: 5px;">
+            API Key <a href="https://console.anthropic.com" target="_blank" style="color: #44ff44; font-size: 11px;">(Get one here)</a>
+          </label>
+          <input type="password" id="claude-api-key" placeholder="sk-ant-..." 
+                 style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.3); color: white; font-size: 12px;">
+          <button class="button" id="save-claude-key" style="margin-top: 10px;">
+            💾 Save API Key
+          </button>
+        </div>
+
+        <div style="margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 11px;">
+          <strong>Smart Model Routing:</strong>
+          <ul style="margin: 5px 0; padding-left: 20px;">
+            <li>Every game: <span style="color: #44ff44;">Haiku</span> (~$0.001)</li>
+            <li>Every 10 games: <span style="color: #ffaa00;">Sonnet</span> (~$0.01)</li>
+            <li>When suspicious: <span style="color: #ff4444;">Opus</span> (~$0.05)</li>
+          </ul>
+          <strong>Est. cost: $2-3/month</strong>
+        </div>
+      </div>
+
+      <div class="prediction-card" id="claude-usage-card" style="display: none;">
+        <div class="prediction-title">📊 Usage & Costs</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Total Calls</div>
+            <div id="claude-calls" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Total Cost</div>
+            <div id="claude-cost" class="stat-value">$0.00</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Haiku Calls</div>
+            <div id="claude-haiku" class="stat-value">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Sonnet Calls</div>
+            <div id="claude-sonnet" class="stat-value">0</div>
+          </div>
+        </div>
+        <button class="button" id="reset-claude-usage" style="margin-top: 10px; font-size: 12px;">
+          Reset Usage Stats
+        </button>
+      </div>
+
+      <div class="prediction-card">
+        <div class="prediction-title">🔬 Deep Dive Analysis</div>
+        <p style="font-size: 12px; margin-bottom: 10px;">
+          Run a comprehensive forensic analysis to detect manipulation, player profiling, or rigged outcomes.
+        </p>
+        <button class="button" id="run-deep-dive" style="background: rgba(255,68,68,0.3); border: 2px solid #ff4444;">
+          🔬 Run Deep Dive (Uses Opus ~$0.05)
+        </button>
+      </div>
+
+      <div class="prediction-card" style="background: rgba(68,255,68,0.1); border-color: rgba(68,255,68,0.3);">
+        <div style="font-size: 12px;">
+          <strong>💡 How It Works:</strong>
+          <ul style="margin: 10px 0; padding-left: 20px; font-size: 11px;">
+            <li>Claude analyzes crash patterns automatically</li>
+            <li>Cheap Haiku model for regular predictions</li>
+            <li>Smarter Sonnet every 10 games for validation</li>
+            <li>Expensive Opus only when needed for deep analysis</li>
+            <li>All costs tracked in real-time</li>
+          </ul>
+          <strong>Way cheaper than running GPT-4!</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Tab -->
+    <div id="tab-stats" class="tab-content">      <div class="prediction-card">
+        <div class="prediction-title">📈 Last 10 Games</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Average</div>
+            <div id="avg-10" class="stat-value">-</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">2x+ Rate</div>
+            <div id="rate-2x-10" class="stat-value">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prediction-card">
+        <div class="prediction-title">📊 Last 50 Games</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Average</div>
+            <div id="avg-50" class="stat-value">-</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Volatility</div>
+            <div id="vol-50" class="stat-value">-</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">1.5x+ Rate</div>
+            <div id="rate-1-5x-50" class="stat-value">-</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">2x+ Rate</div>
+            <div id="rate-2x-50" class="stat-value">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prediction-card">
+        <div class="prediction-title">📉 All Time</div>
+        <div class="stat-box">
+          <div class="stat-label">Total Games Analyzed</div>
+          <div id="total-games" class="stat-value">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="tab-history" class="tab-content">
+      <div class="prediction-card">
+        <div class="prediction-title">🕐 Recent Crashes</div>
+        <div class="scroll-container" id="history-list">
+          <div style="text-align: center; opacity: 0.6; padding: 20px;">
+            No data yet
+          </div>
+        </div>
+      </div>
+
+      <button class="button" id="clear-data">Clear All Data</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
